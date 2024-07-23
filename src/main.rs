@@ -28,7 +28,7 @@
 //     });
 // }
 
-use bevy::prelude::*;
+use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_ecs_tilemap::*;
 
 mod helpers;
@@ -56,7 +56,14 @@ fn main() {
                     }),
                     ..default()
                 })
-                .set(ImagePlugin::default_nearest()),
+                .set(ImagePlugin::default_nearest())
+                .set(AssetPlugin {
+                    // Wasm builds will check for meta files (that don't exist) if this isn't set.
+                    // This causes errors and even panics in web builds on itch.
+                    // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
+                    meta_check: AssetMetaCheck::Never,
+                    ..default()
+                }),
         )
         .add_plugins(TilemapPlugin)
         .add_plugins(helpers::LdtkPlugin)
