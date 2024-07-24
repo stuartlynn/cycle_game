@@ -4,7 +4,7 @@ use bevy_ecs_ldtk::prelude::*;
 use crate::{goal::Goal, walls::LevelWalls};
 
 #[derive(Component, Default)]
-struct Player;
+pub struct Player;
 
 #[derive(Default, Bundle, LdtkEntity)]
 struct PlayerBundle {
