@@ -29,18 +29,22 @@
 // }
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
-use bevy_ecs_tilemap::*;
+use bevy_ecs_ldtk::prelude::*;
 
 mod helpers;
 
 fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+    let mut camera = Camera2dBundle::default();
+    camera.projection.scale = 0.5;
+     camera.transform.translation.x += 900.0 / 4.0;
+     camera.transform.translation.y += 500.0 / 4.0;
 
-    let handle: Handle<helpers::LdtkMap> = asset_server.load("map.ldtk");
+    // camera.transform.translation.x += 1280.0 / 4.0;
+    // camera.transform.translation.y += 720.0 / 4.0;
+    commands.spawn(camera);
 
-    commands.spawn(helpers::LdtkMapBundle {
-        ldtk_map: handle,
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    commands.spawn(LdtkWorldBundle {
+        ldtk_handle: asset_server.load("levels.ldtk"),
         ..Default::default()
     });
 }
@@ -65,9 +69,16 @@ fn main() {
                     ..default()
                 }),
         )
-        .add_plugins(TilemapPlugin)
-        .add_plugins(helpers::LdtkPlugin)
+        .add_plugins(LdtkPlugin)
         .add_systems(Startup, startup)
-        .add_systems(Update, helpers::movement)
+        .insert_resource(LevelSelection::index(0))
         .run();
+
+    // App::new()
+    //     .add_plugins()
+    //     .add_plugins(TilemapPlugin)
+    //     .add_plugins(helpers::LdtkPlugin)
+    //     .add_systems(Startup, startup)
+    //     .add_systems(Update, helpers::movement)
+    //     .run();
 }

@@ -18,6 +18,7 @@ opt-level = 3
 [dependencies]
 anyhow = "1.0.86"
 bevy = "0.14"
+bevy_ecs_ldtk = {version="0.10.0", features=["atlas"]}
 bevy_ecs_tilemap="0.14.0"
 ldtk_rust = "0.6.0"
 log = "0.4.22"
