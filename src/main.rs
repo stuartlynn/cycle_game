@@ -4,40 +4,22 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
-// use bevy::asset::AssetMetaCheck;
-// use bevy::prelude::*;
-
-// fn main() {
-//     App::new()
-//         .add_plugins(DefaultPlugins.set(AssetPlugin {
-//             // Wasm builds will check for meta files (that don't exist) if this isn't set.
-//             // This causes errors and even panics in web builds on itch.
-//             // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
-//             meta_check: AssetMetaCheck::Never,
-//             ..default()
-//         }))
-//         .add_systems(Startup, setup)
-//         .run();
-// }
-
-// fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-//     commands.spawn(Camera2dBundle::default());
-//     commands.spawn(SpriteBundle {
-//         texture: asset_server.load("ducky.png"),
-//         ..Default::default()
-//     });
-// }
+mod consts;
+mod goal;
+mod player;
+mod walls;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
-
-mod helpers;
+use goal::GoalPlugin;
+use player::PlayerPlugin;
+use walls::WallPlugin;
 
 fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut camera = Camera2dBundle::default();
     camera.projection.scale = 0.5;
-     camera.transform.translation.x += 900.0 / 4.0;
-     camera.transform.translation.y += 500.0 / 4.0;
+    camera.transform.translation.x += 900.0 / 4.0;
+    camera.transform.translation.y += 500.0 / 4.0;
 
     // camera.transform.translation.x += 1280.0 / 4.0;
     // camera.transform.translation.y += 720.0 / 4.0;
@@ -70,15 +52,23 @@ fn main() {
                 }),
         )
         .add_plugins(LdtkPlugin)
+        .add_plugins(PlayerPlugin)
+        .add_plugins(WallPlugin)
+        .add_plugins(GoalPlugin)
         .add_systems(Startup, startup)
+        .add_systems(Update, translate_grid_coords_entities)
         .insert_resource(LevelSelection::index(0))
         .run();
+}
 
-    // App::new()
-    //     .add_plugins()
-    //     .add_plugins(TilemapPlugin)
-    //     .add_plugins(helpers::LdtkPlugin)
-    //     .add_systems(Startup, startup)
-    //     .add_systems(Update, helpers::movement)
-    //     .run();
+fn translate_grid_coords_entities(
+    mut grid_coords_entities: Query<(&mut Transform, &GridCoords), Changed<GridCoords>>,
+) {
+    for (mut transform, grid_coords) in grid_coords_entities.iter_mut() {
+        transform.translation = bevy_ecs_ldtk::utils::grid_coords_to_translation(
+            *grid_coords,
+            IVec2::splat(consts::GRID_SIZE),
+        )
+        .extend(transform.translation.z);
+    }
 }
