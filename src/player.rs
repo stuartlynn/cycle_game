@@ -13,21 +13,24 @@ struct PlayerBundle {
     sprite_sheet_bundle: LdtkSpriteSheetBundle,
     #[grid_coords]
     grid_coords: GridCoords,
+    animation_timer: PlayerAnimationTimer,
 }
 
 pub struct PlayerPlugin;
 
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut bevy::prelude::App) {
-        app.register_ldtk_entity::<PlayerBundle>("Player")
-            .add_systems(Update, (move_player_from_input, test_system));
+#[derive(Component, Deref, DerefMut)]
+pub struct PlayerAnimationTimer(Timer);
+
+impl Default for PlayerAnimationTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(0.1, TimerMode::Repeating))
     }
 }
 
-fn test_system(mut players: Query<(&GridCoords, &mut Sprite, &TextureAtlas), With<Player>>) {
-    for (coords, mut sprite, texture_atlas) in &mut players {
-        println!("Got sprite {:#?}", sprite);
-        println!("Got Atlas {:#?}", sprite);
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut bevy::prelude::App) {
+        app.register_ldtk_entity::<PlayerBundle>("Player")
+            .add_systems(Update, (move_player_from_input, animate_player));
     }
 }
 
@@ -65,6 +68,23 @@ fn move_player_from_input(
             Facing::Left => sprite.flip_x = true,
             Facing::Right => sprite.flip_x = false,
             _ => {}
+        }
+    }
+}
+
+fn animate_player(
+    time: Res<Time>,
+    mut query: Query<(&mut TextureAtlas, &mut PlayerAnimationTimer), With<Player>>,
+) {
+    for (mut atlas, mut timer) in &mut query {
+        timer.tick(time.delta());
+        if (timer.just_finished()) {
+            println!("Animating");
+            println!("atlas index {}", atlas.index);
+            atlas.index = atlas.index + 1;
+            if atlas.index > 143 + 5 {
+                atlas.index = 143
+            }
         }
     }
 }

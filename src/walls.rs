@@ -60,7 +60,6 @@ fn cache_wall_locations(
                 level_width: level.px_wid / crate::consts::GRID_SIZE,
                 level_height: level.px_hei / crate::consts::GRID_SIZE,
             };
-            println!("{new_level_walls:#?}");
 
             *level_walls = new_level_walls;
         }
