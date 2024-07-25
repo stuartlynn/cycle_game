@@ -4,7 +4,7 @@ from diffusers import StableDiffusionPipeline
 from diffusers.models.lora import LoRACompatibleConv
 
 
-def seamless_tiling(pipeline, x_axis, y_axis):
+def seamless_tiling(pipeline, x_axis: bool = True, y_axis: bool = True):
     def asymmetric_conv2d_convforward(self, input: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor] = None):
         self.paddingX = (self._reversed_padding_repeated_twice[0], self._reversed_padding_repeated_twice[1], 0, 0)
         self.paddingY = (0, 0, self._reversed_padding_repeated_twice[2], self._reversed_padding_repeated_twice[3])

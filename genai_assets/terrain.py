@@ -9,9 +9,9 @@ from genai_assets.tiling import seamless_tiling
 
 SEASONS = ["spring", "summer", "fall", "winter"]
 CONDITIONS = ["sunny", "rainy", "night"]
-SURFACE_TYPES = ["grass", "sand", "rock", "water"]
-SEED = 42
-OUTPUT_FOLDER = "terrain_tiles"
+SURFACE_TYPES = ["grass", "desert", "rock", "ocean"]
+SEED = 43
+OUTPUT_FOLDER = "terrain_tiles_oil"
 N_STEPS = 2
 GUIDANCE = 0.0
 
@@ -27,21 +27,19 @@ def make_seamless_pipeline():
         SDXL_TURBO, torch_dtype=torch.float16
     ).to("cuda")
     pipe.enable_model_cpu_offload()
-    pipe = seamless_tiling(pipeline=pipe, x_axis=True, y_axis=True)
-    return pipe
+
+    return seamless_tiling(pipeline=pipe)
 
 
 def create_terrain_tile(pipeline, surface: str, season: str, condition: str) -> str:
     """Create a terrain tile over a mix of conditions & seasons."""
 
-    prompt = f"Texture of {surface} during {season} season while it is {condition}."
+    prompt = f"Texture of {surface} during {season} season while it is {condition}. As viewed from above. Surreal oil painting, bold exaggerated styles."
 
     filename = f"{SEED}_{season}_{condition}_{surface}.png"
-    folder = "terrain_tiles"
-
     image = make_tiled_image(prompt, pipeline, seed=SEED)
 
-    path = os.path.join(folder, filename)
+    path = os.path.join(OUTPUT_FOLDER, filename)
     image.save(path)
 
 
