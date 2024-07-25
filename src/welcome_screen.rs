@@ -35,35 +35,43 @@ pub fn spawn_welcome_screen(mut commands: Commands) {
             height: Val::Percent(100.0),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
             ..default()
         },
         ..default()
     };
 
-    let text = commands
-        .spawn(TextBundle::from_sections([
-            TextSection::new(
+    let header = commands
+        .spawn(
+            TextBundle::from_sections([TextSection::new(
                 "CycleGame!",
                 TextStyle {
                     font_size: 100.0,
                     color: Color::WHITE,
                     ..default()
                 },
-            ),
-            TextSection::new(
-                "Press any key to start!",
+            )])
+            .with_text_justify(JustifyText::Center),
+        )
+        .id();
+
+    let prompt = commands
+        .spawn(
+            TextBundle::from_sections([TextSection::new(
+                "press space to start!",
                 TextStyle {
                     font_size: 75.0,
                     color: Color::WHITE,
                     ..default()
                 },
-            ),
-        ]))
+            )])
+            .with_text_justify(JustifyText::Center),
+        )
         .id();
 
     let parent = commands.spawn((container, WelcomeScreen)).id();
 
-    commands.entity(parent).push_children(&[text]);
+    commands.entity(parent).push_children(&[header, prompt]);
 }
 
 pub fn despawn_welcome_screen(mut commands: Commands, query: Query<Entity, With<WelcomeScreen>>) {
