@@ -7,11 +7,13 @@ from diffusers import StableDiffusionXLPipeline
 
 from genai_assets.tiling import seamless_tiling
 
-SEASONS = ["spring", "summer", "fall", "winter"]
-CONDITIONS = ["sunny", "rainy", "night"]
-SURFACE_TYPES = ["grass", "desert", "rock", "ocean"]
-SEED = 43
-OUTPUT_FOLDER = "terrain_tiles_oil"
+# SEASONS = ["spring", "summer", "fall", "winter"]
+SEASONS = ["summer", "winter"]
+CONDITIONS = ["sunny", "night"]
+SURFACE_TYPES = ["grass", "desert", "rock", "ocean", "pebbles", "dirt"]
+
+SEED = 46
+OUTPUT_FOLDER = "terrain_tiles_photo"
 N_STEPS = 2
 GUIDANCE = 0.0
 
@@ -34,7 +36,8 @@ def make_seamless_pipeline():
 def create_terrain_tile(pipeline, surface: str, season: str, condition: str) -> str:
     """Create a terrain tile over a mix of conditions & seasons."""
 
-    prompt = f"Texture of {surface} during {season} season while it is {condition}. As viewed from above. Surreal oil painting, bold exaggerated styles."
+#    prompt = f"Texture of {surface} during {season} season while it is {condition}. As viewed from above, at a medium distance. Surreal oil painting, bold exaggerated styles."
+    prompt = f"Texture of {surface} during {season} season while it is {condition}. As viewed from above, at a medium distance. Realistic, bold exaggerated styles."
 
     filename = f"{SEED}_{season}_{condition}_{surface}.png"
     image = make_tiled_image(prompt, pipeline, seed=SEED)
