@@ -5,7 +5,6 @@ import os
 from diffusers import StableDiffusionXLPipeline
 import torch
 
-from diffusion.config import SDXL_TURBO
 
 RANDOM_SEED = 42
 N_STEPS = 2
@@ -13,7 +12,8 @@ N_SEEDS = 3
 CPU_OFFLOAD = False
 CREATURE = "rat"
 COLOUR = "purple"
-OUTPUT_FOLDER = f"{CREATURE}_images"
+OUTPUT_FOLDER = f"{CREATURE}_images
+SDXL_TURBO = "stabilityai/sdxl-turbo"
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
