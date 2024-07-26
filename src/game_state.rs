@@ -46,7 +46,7 @@ impl Default for TimeState {
     fn default() -> Self {
         Self {
             time_axis: TimeAxis::Horizontal,
-            time_step_delta: 5,
+            time_step_delta: 1,
             time: 0,
         }
     }

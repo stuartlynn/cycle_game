@@ -6,7 +6,7 @@ use crate::game_state::GameState;
 pub struct OrbsPlugin;
 
 #[derive(Component, Default)]
-struct Orb;
+pub struct Orb;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct OrbTimer(Timer);
