@@ -21,6 +21,7 @@ bevy = "0.14"
 bevy-inspector-egui = {version="0.25.1", optional = true}
 bevy_ecs_ldtk = {version="0.10.0", features=["atlas"]}
 bevy_ecs_tilemap="0.14.0"
+bevy_light_2d = "0.2.1"
 bevy_ui = { version = "0.14.0", features = ["bevy_text"] }
 ldtk_rust = "0.6.0"
 log = "0.4.22"

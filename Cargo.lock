@@ -705,6 +705,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_ecs_ldtk",
  "bevy_ecs_tilemap",
+ "bevy_light_2d",
  "bevy_ui",
  "ldtk_rust",
  "log",
@@ -846,6 +847,16 @@ dependencies = [
  "bevy_utils",
  "bevy_window",
  "bevy_winit",
+]
+
+[[package]]
+name = "bevy_light_2d"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b111dd65f3e61928966656efab6beca38222a3679405d030fa7d158ed4fc2e74"
+dependencies = [
+ "bevy",
+ "smallvec",
 ]
 
 [[package]]
