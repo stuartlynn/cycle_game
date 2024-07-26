@@ -6,14 +6,23 @@
 
 mod consts;
 mod debug;
+mod game_state;
 mod goal;
+mod hud;
+mod orbs;
 mod player;
 mod walls;
+mod welcome_screen;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
 use debug::DebugPlugin;
+use game_state::{GameState, GameStatePlugin};
 use goal::GoalPlugin;
+use hud::HudPlugin;
+use orbs::OrbsPlugin;
+use welcome_screen::WelcomeScreenPlugin;
+// use hud::HudPlugin;
 use player::{Player, PlayerPlugin};
 use walls::WallPlugin;
 
@@ -24,7 +33,9 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     camera.transform.translation.y += 500.0 / 4.0;
 
     commands.spawn(camera);
+}
 
+fn start_game(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(LdtkWorldBundle {
         ldtk_handle: asset_server.load("tile-based-game.ldtk"),
         ..Default::default()
@@ -51,18 +62,24 @@ fn main() {
                     ..default()
                 }),
         )
+        .add_plugins(GameStatePlugin)
         .add_plugins(LdtkPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(WallPlugin)
+        .add_plugins(OrbsPlugin)
         .add_plugins(GoalPlugin)
         .add_plugins(DebugPlugin)
+        .add_plugins(WelcomeScreenPlugin)
+        .add_plugins(HudPlugin)
         .add_systems(Startup, startup)
+        .add_systems(OnEnter(GameState::Playing), start_game)
         .add_systems(
             Update,
             (
                 translate_grid_coords_entities,
                 camera_fit_inside_current_level,
-            ),
+            )
+                .run_if(in_state(GameState::Playing)),
         )
         .insert_resource(LevelSelection::index(0))
         .run();
