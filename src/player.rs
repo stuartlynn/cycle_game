@@ -4,7 +4,7 @@ use bevy_ecs_ldtk::prelude::*;
 use crate::{
     game_state::{GameState, TimeAxis, TimeState},
     goal::Goal,
-    orbs::{AxisSwitch, DirectionSwitch, SpeedUp},
+    orbs::{AxisSwitch, DirectionSwitch, SlowDown, SpeedUp},
     walls::LevelWalls,
 };
 
@@ -44,6 +44,7 @@ impl Plugin for PlayerPlugin {
                     check_direction_orb_hit,
                     check_slow_down_orb_hit,
                     check_speed_up_orb_hit,
+                    check_goal_acheived,
                 )
                     .run_if(in_state(GameState::Playing)),
             );
@@ -123,19 +124,20 @@ fn animate_player(
 fn check_switch_orb_hit(
     mut time_state: ResMut<TimeState>,
     players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
-    mut orbs: Query<&GridCoords, With<AxisSwitch>>,
+    orbs: Query<&GridCoords, With<AxisSwitch>>,
 ) {
-    if players
-        .iter()
-        .zip(orbs.iter())
-        .any(|(player_grid_coords, orb_grid_coords)| player_grid_coords == orb_grid_coords)
-    {
-        let new_axis = match time_state.time_axis {
-            TimeAxis::Horizontal => TimeAxis::Vertical,
-            TimeAxis::Vertical => TimeAxis::Horizontal,
-            TimeAxis::None => TimeAxis::None,
-        };
-        time_state.time_axis = new_axis;
+    for player in &players {
+        for orb in &orbs {
+            if player == orb {
+                let new_axis = match time_state.time_axis {
+                    TimeAxis::Horizontal => TimeAxis::Vertical,
+                    TimeAxis::Vertical => TimeAxis::Horizontal,
+                    TimeAxis::None => TimeAxis::None,
+                };
+                time_state.time_axis = new_axis;
+                return;
+            }
+        }
     }
 }
 
@@ -143,14 +145,15 @@ fn check_switch_orb_hit(
 fn check_direction_orb_hit(
     mut time_state: ResMut<TimeState>,
     players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
-    mut orbs: Query<&GridCoords, With<DirectionSwitch>>,
+    orbs: Query<&GridCoords, With<DirectionSwitch>>,
 ) {
-    if players
-        .iter()
-        .zip(orbs.iter())
-        .any(|(player_grid_coords, orb_grid_coords)| player_grid_coords == orb_grid_coords)
-    {
-        time_state.time_step_delta = -time_state.time_step_delta;
+    for player in &players {
+        for orb in &orbs {
+            if player == orb {
+                time_state.time_step_delta = -time_state.time_step_delta;
+                return;
+            }
+        }
     }
 }
 
@@ -158,14 +161,15 @@ fn check_direction_orb_hit(
 fn check_speed_up_orb_hit(
     mut time_state: ResMut<TimeState>,
     players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
-    mut orbs: Query<&GridCoords, With<SpeedUp>>,
+    orbs: Query<&GridCoords, With<SpeedUp>>,
 ) {
-    if players
-        .iter()
-        .zip(orbs.iter())
-        .any(|(player_grid_coords, orb_grid_coords)| player_grid_coords == orb_grid_coords)
-    {
-        time_state.time_step_delta = time_state.time_step_delta + 1;
+    for player in &players {
+        for orb in &orbs {
+            if player == orb {
+                time_state.time_step_delta = time_state.time_step_delta + 1;
+                return;
+            }
+        }
     }
 }
 
@@ -173,14 +177,15 @@ fn check_speed_up_orb_hit(
 fn check_slow_down_orb_hit(
     mut time_state: ResMut<TimeState>,
     players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
-    mut orbs: Query<&GridCoords, With<SpeedUp>>,
+    orbs: Query<&GridCoords, With<SlowDown>>,
 ) {
-    if players
-        .iter()
-        .zip(orbs.iter())
-        .any(|(player_grid_coords, orb_grid_coords)| player_grid_coords == orb_grid_coords)
-    {
-        time_state.time_step_delta = time_state.time_step_delta - 1;
+    for player in &players {
+        for orb in &orbs {
+            if player == orb {
+                time_state.time_step_delta = time_state.time_step_delta - 1;
+                return;
+            }
+        }
     }
 }
 
