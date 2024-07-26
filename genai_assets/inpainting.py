@@ -1,49 +1,60 @@
 import torch
-from diffusers import AutoPipelineForInpainting, StableDiffusion3InpaintPipeline
-from PIL import Image, ImageDraw
+import numpy as np
+from diffusers import StableDiffusion3InpaintPipeline
+from PIL import Image
 
 from genai_assets.config import HUGGING_FACE_HUB_TOKEN, SD3_REPO
 
 
-def create_edge_texture(image_path, direction, original_fraction, inpaint_fraction):
-
-    # Load and resize the image
+def create_gradient_image(image_path, direction, original_fraction, transition_fraction):
     image = Image.open(image_path).convert("RGB")
-    # image = image.resize((512, 512))
+    image = image.resize((1024, 1024))
 
-    # Calculate pixels for each region
-    original_pixels = int(512 * original_fraction)
-    inpaint_pixels = int(512 * inpaint_fraction)
-    white_pixels = 512 - original_pixels - inpaint_pixels
+    img_array = np.array(image).astype(float)
+    height, width, _ = img_array.shape
 
-    # Create the new image and mask
-    new_image = Image.new('RGB', (512, 512), (255, 255, 255))
-    mask = Image.new('L', (512, 512), 0)  # 0 is black (area to keep), 255 is white (area to inpaint)
+    original_pixels = int(width * original_fraction)
+    transition_pixels = int(width * transition_fraction)
 
+    # Create a gradient
+    if direction in ['left', 'right']:
+        gradient = np.linspace(0, 1, width)
+    else:  # 'up' or 'down'
+        gradient = np.linspace(0, 1, height)
+        gradient = gradient[:, np.newaxis]
+
+    if direction in ['left', 'up']:
+        gradient = 1 - gradient
+
+    # Adjust gradient to match original and transition fractions
+    gradient[gradient < original_fraction] = 0
+    gradient[gradient > original_fraction + transition_fraction] = 1
+    gradient = (gradient - original_fraction) / transition_fraction
+    gradient = np.clip(gradient, 0, 1)
+
+    # Apply the gradient to the image
+    for c in range(3):  # For each color channel
+        img_array[:, :, c] = img_array[:, :, c] * (1 - gradient)  # + 255 * gradient
+
+    gradient_image = Image.fromarray(img_array.astype('uint8'))
+
+    # Create a binary mask
+    mask = np.zeros((height, width), dtype=np.uint8)
     if direction == 'left':
-        extra = int(inpaint_pixels // 2)
-        new_image.paste(image.crop((0, 0, original_pixels + extra, 512)), (0, 0))
-        ImageDraw.Draw(mask).rectangle([original_pixels, 0, original_pixels + inpaint_pixels, 512], fill=255)
+        mask[:, original_pixels:-200] = 255
     elif direction == 'right':
-        new_image.paste(image.crop((512 - original_pixels, 0, 512, 512)), (512 - original_pixels, 0))
-        ImageDraw.Draw(mask).rectangle([white_pixels, 0, 512 - original_pixels, 512], fill=255)
+        mask[:, :width - original_pixels] = 255
     elif direction == 'up':
-        new_image.paste(image.crop((0, 0, 512, original_pixels)), (0, 0))
-        ImageDraw.Draw(mask).rectangle([0, original_pixels, 512, original_pixels + inpaint_pixels], fill=255)
+        mask[original_pixels:, :] = 255
     elif direction == 'down':
-        new_image.paste(image.crop((0, 512 - original_pixels, 512, 512)), (0, 512 - original_pixels))
-        ImageDraw.Draw(mask).rectangle([0, white_pixels, 512, 512 - original_pixels], fill=255)
-    else:
-        raise ValueError("Invalid direction. Choose 'left', 'right', 'up', or 'down'.")
+        mask[:height - original_pixels, :] = 255
 
-    return new_image, mask
+    mask_image = Image.fromarray(mask)
+
+    return gradient_image, mask_image
 
 
-def inpaint_edge_texture(image_path, prompt, direction, original_fraction, inpaint_fraction, seed=None):
-    # Load the pipeline
-    # pipeline = AutoPipelineForInpainting.from_pretrained(
-    #     "runwayml/stable-diffusion-inpainting", torch_dtype=torch.float16, variant="fp16"
-    # )
+def inpaint_edge_texture(image_path, prompt, direction, original_fraction, transition_fraction, seed=None):
     pipeline = StableDiffusion3InpaintPipeline.from_pretrained(
         SD3_REPO,
         text_encoder_3=None,
@@ -54,36 +65,25 @@ def inpaint_edge_texture(image_path, prompt, direction, original_fraction, inpai
 
     pipeline.enable_model_cpu_offload()
 
-    # Create the edge texture and mask
-    init_image, mask_image = create_edge_texture(image_path, direction, original_fraction, inpaint_fraction)
+    init_image, mask_image = create_gradient_image(image_path, direction, original_fraction, transition_fraction)
 
-
-    # Set up the generator
     if seed is not None:
         generator = torch.Generator("cuda").manual_seed(seed)
     else:
         generator = torch.Generator("cuda").manual_seed(torch.randint(0, 1000000, (1,)).item())
 
-    # Need to upscale for SD3 to 1024 from 512
-    init_image = init_image.resize((1024, 1024))
-    mask_image = mask_image.resize((1024, 1024))
-
-    # save the mask image
     mask_image.save("edge_texture_mask.png")
-
-    # save the init image
     init_image.save("edge_texture_init.png")
 
-    # Generate the inpainted image
     image = pipeline(
         prompt=prompt,
         image=init_image,
         mask_image=mask_image,
         generator=generator,
-        guidance_scale=7.0,
+        guidance_scale=7.5,
+        num_inference_steps=50,
     ).images[0]
 
-    # Save the inpainted image
     image.save("edge_texture_output.png")
 
     return image
@@ -92,7 +92,8 @@ def inpaint_edge_texture(image_path, prompt, direction, original_fraction, inpai
 # Example usage
 if __name__ == "__main__":
     init_image_path = "./terrain_tiles_photo/46_summer_sunny_desert.png"
-    prompt = "A sunny desert landscape viewed from above. Realistic, bold exaggerated styles. Gradually disperses to reveal a white background, no sharp edges."
+    # prompt = "A sunny desert landscape viewed from above. Realistic, bold exaggerated styles. Gradually disperses to reveal a dark background."
+    prompt = "A sunny desert landscape viewed from above. Realistic, bold exaggerated styles. Hits a dark wall edge."
     direction = "left"
     seed = 92
 
