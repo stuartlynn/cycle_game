@@ -9,6 +9,7 @@ mod debug;
 mod game_state;
 mod goal;
 mod hud;
+mod orbs;
 mod player;
 mod walls;
 mod welcome_screen;
@@ -18,6 +19,8 @@ use bevy_ecs_ldtk::prelude::*;
 use debug::DebugPlugin;
 use game_state::{GameState, GameStatePlugin};
 use goal::GoalPlugin;
+use hud::HudPlugin;
+use orbs::OrbsPlugin;
 use welcome_screen::WelcomeScreenPlugin;
 // use hud::HudPlugin;
 use player::{Player, PlayerPlugin};
@@ -63,9 +66,11 @@ fn main() {
         .add_plugins(LdtkPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(WallPlugin)
+        .add_plugins(OrbsPlugin)
         .add_plugins(GoalPlugin)
         .add_plugins(DebugPlugin)
         .add_plugins(WelcomeScreenPlugin)
+        .add_plugins(HudPlugin)
         .add_systems(Startup, startup)
         .add_systems(OnEnter(GameState::Playing), start_game)
         .add_systems(
