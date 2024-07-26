@@ -2,8 +2,10 @@ import numpy as np
 from PIL import Image
 import argparse
 
+TAPER_RATE = 2.0
 
-def create_gradient_mask(size, direction, taper_rate=1.0):
+
+def create_gradient_mask(size, direction, taper_rate=TAPER_RATE):
 
     """Create a gradient mask with corrected directions and improved smoothness."""
     if direction in ['left', 'right']:
@@ -15,23 +17,26 @@ def create_gradient_mask(size, direction, taper_rate=1.0):
     elif direction in ['top_left', 'top_right', 'bottom_left', 'bottom_right']:
 
         x_direction = 'left' if 'left' in direction else 'right'
-        x_mask = create_gradient_mask(size, x_direction, taper_rate=1.0)
+        x_mask = create_gradient_mask(size, x_direction, taper_rate=taper_rate)
 
         y_direction = 'top' if 'top' in direction else 'bottom'
-        y_mask = create_gradient_mask(size, y_direction, taper_rate=1.0)
+        y_mask = create_gradient_mask(size, y_direction, taper_rate=taper_rate)
 
         # Combine x and y masks but need them back as floats first
-        x_mask = x_mask.astype(float)
-        y_mask = y_mask.astype(float)
+        x_mask = x_mask.astype(float) / 255
+        y_mask = y_mask.astype(float) / 255
 
-        return (x_mask * y_mask / 255).astype(np.uint8)
+        combined_mask = x_mask * y_mask
+
+        return (combined_mask * 255).astype(np.uint8)
 
     # Apply taper rate for smoother transition
     mask = np.power(mask, taper_rate)
 
     # Correct the gradient direction
     if direction in ['left', 'top']:
-        mask = 1 - mask
+        # Flip orientation of the matrix
+        mask = np.flip(mask, axis=0 if direction == 'top' else 1)
 
     return (mask * 255).astype(np.uint8)
 
@@ -43,7 +48,7 @@ def apply_gradient_mask(image, mask):
     return Image.fromarray(rgba)
 
 
-def generate_tileset(base_tile_path, output_path, taper_rate=1.0, output_format='auto'):
+def generate_tileset(base_tile_path, output_path, taper_rate=TAPER_RATE, output_format='auto'):
     """Generate a complete 3x3 tileset with fading edges and corners."""
     base_tile = Image.open(base_tile_path).convert('RGBA')
     size = base_tile.size
@@ -96,16 +101,18 @@ def generate_tileset(base_tile_path, output_path, taper_rate=1.0, output_format=
 
     print(f"Tileset saved to {output_path}")
 
+
 # Test code
 if __name__ == "__main__":
     # Save "base_tile.png" as a 512x512 plain yellow
-    base_tile = Image.new('RGB', (512, 512), (255, 255, 0))
-    base_tile.save("default_tile.png")
+    # base_tile = Image.new('RGB', (512, 512), (255, 255, 0))
+    # base_tile.save("default_tile.png")
+    default_base_tile = "terrain_tiles_photo/46_summer_sunny_desert.png"
 
     parser = argparse.ArgumentParser(description="Generate a tileset with fading edges.")
-    parser.add_argument("--base_tile",  default="default_tile.png", help="Path to the base tile image")
+    parser.add_argument("--base_tile",  default=default_base_tile, help="Path to the base tile image")
     parser.add_argument("--output", default="default_tileset.png",  help="Path for the output tileset")
-    parser.add_argument("--taper", type=float, default=1.0, help="Taper rate for fading (default: 1.0)")
+    parser.add_argument("--taper", type=float, default=TAPER_RATE, help="Taper rate for fading (default: 1.0)")
     parser.add_argument("--format", choices=['auto', 'png', 'webp'], default='auto',
                         help="Output format (default: auto)")
 
