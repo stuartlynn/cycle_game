@@ -89,6 +89,9 @@ impl OrbAnimFrame {
     }
 }
 
+#[derive(Component)]
+pub struct PlayerIn;
+
 impl Plugin for OrbsPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<AxisSwitchBundle>("Axis_switch")

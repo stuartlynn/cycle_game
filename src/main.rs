@@ -87,7 +87,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                translate_grid_coords_entities,
+                // translate_grid_coords_entities,
                 camera_fit_inside_current_level,
             )
                 .run_if(in_state(GameState::Playing)),

@@ -1,7 +1,8 @@
-use bevy::prelude::*;
+use bevy::{a11y::accesskit::Vec2, prelude::*, render::render_resource::AsBindGroupShaderType};
 use bevy_ecs_ldtk::prelude::*;
 
 use crate::{
+    consts,
     game_state::{GameState, TimeAxis, TimeState},
     goal::Goal,
     orbs::{AxisSwitch, DirectionSwitch, SlowDown, SpeedUp},
@@ -60,43 +61,53 @@ pub enum Facing {
 
 /// Basic player movement system
 fn move_player_from_input(
-    mut players: Query<(&mut GridCoords, &mut Sprite), With<Player>>,
+    mut players: Query<(&mut Transform, &mut GridCoords, &mut Sprite), With<Player>>,
     mut time_state: ResMut<TimeState>,
     input: Res<ButtonInput<KeyCode>>,
     level_walls: Res<LevelWalls>,
 ) {
-    let (movement_direction, facing, axis, sense) = if input.just_pressed(KeyCode::KeyW) {
-        (GridCoords::new(0, 1), Facing::Up, TimeAxis::Vertical, 1)
-    } else if input.just_pressed(KeyCode::KeyA) {
-        (
-            GridCoords::new(-1, 0),
-            Facing::Left,
-            TimeAxis::Horizontal,
-            -1,
-        )
-    } else if input.just_pressed(KeyCode::KeyS) {
-        (GridCoords::new(0, -1), Facing::Down, TimeAxis::Vertical, -1)
-    } else if input.just_pressed(KeyCode::KeyD) {
-        (
-            GridCoords::new(1, 0),
-            Facing::Right,
-            TimeAxis::Horizontal,
-            1,
-        )
+    let (movement, facing, axis, sense) = if input.pressed(KeyCode::KeyW) {
+        ((0.0, 1.0), Facing::Up, TimeAxis::Vertical, 1)
+    } else if input.pressed(KeyCode::KeyA) {
+        ((-1.0, 0.0), Facing::Left, TimeAxis::Horizontal, -1)
+    } else if input.pressed(KeyCode::KeyS) {
+        ((0.0, -1.0), Facing::Down, TimeAxis::Vertical, -1)
+    } else if input.pressed(KeyCode::KeyD) {
+        ((1.0, 0.0), Facing::Right, TimeAxis::Horizontal, 1)
     } else {
         return;
     };
 
-    /// TODO break this out into another system
-    if (time_state.time_axis == axis) {
-        time_state.time = time_state.time + sense * time_state.time_step_delta
-    }
+    // TODO break this out into another system
 
-    for (mut player_grid_coords, mut sprite) in players.iter_mut() {
-        let destination = *player_grid_coords + movement_direction;
-        if !level_walls.in_wall(&destination) {
-            *player_grid_coords = destination;
+    for (mut transform, mut player_grid_coords, mut sprite) in players.iter_mut() {
+        let translation = Vec2::from(movement) * consts::MOVEMENT_SPEED;
+        let new_transform = transform.with_translation(
+            transform.translation
+                + Vec3 {
+                    x: translation.x as f32,
+                    y: translation.y as f32,
+                    z: 0.0,
+                },
+        );
+        println!("{:?} {:?}", transform, new_transform);
+
+        let new_grid_coords = bevy_ecs_ldtk::utils::translation_to_grid_coords(
+            new_transform.translation.xy(),
+            IVec2 {
+                x: consts::GRID_SIZE,
+                y: consts::GRID_SIZE,
+            },
+        );
+
+        if !level_walls.in_wall(&new_grid_coords) {
+            *player_grid_coords = new_grid_coords;
+            *transform = new_transform;
+            if time_state.time_axis == axis {
+                time_state.time = time_state.time + sense * time_state.time_step_delta
+            }
         }
+
         match facing {
             Facing::Left => sprite.flip_x = true,
             Facing::Right => sprite.flip_x = false,
