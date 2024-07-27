@@ -1,10 +1,11 @@
-use bevy::prelude::*;
+use bevy::{a11y::accesskit::Vec2, prelude::*, render::render_resource::AsBindGroupShaderType};
 use bevy_ecs_ldtk::prelude::*;
 
 use crate::{
+    consts,
     game_state::{GameState, TimeAxis, TimeState},
     goal::Goal,
-    orbs::{AxisSwitch, DirectionSwitch, SlowDown, SpeedUp},
+    orbs::{AxisSwitch, DirectionSwitch, Orb, SlowDown, SpeedUp},
     walls::LevelWalls,
 };
 
@@ -37,15 +38,20 @@ impl Plugin for PlayerPlugin {
         app.register_ldtk_entity::<PlayerBundle>("Player")
             .add_systems(
                 Update,
+                (move_player_from_input, animate_player, check_goal_acheived)
+                    .run_if(in_state(GameState::Playing)),
+            )
+            .add_systems(
+                Update,
                 (
-                    move_player_from_input,
-                    animate_player,
                     check_switch_orb_hit,
                     check_direction_orb_hit,
                     check_slow_down_orb_hit,
                     check_speed_up_orb_hit,
-                    check_goal_acheived,
+                    check_in_no_orb,
+                    check_in_orb,
                 )
+                    .chain()
                     .run_if(in_state(GameState::Playing)),
             );
     }
@@ -60,43 +66,52 @@ pub enum Facing {
 
 /// Basic player movement system
 fn move_player_from_input(
-    mut players: Query<(&mut GridCoords, &mut Sprite), With<Player>>,
+    mut players: Query<(&mut Transform, &mut GridCoords, &mut Sprite), With<Player>>,
     mut time_state: ResMut<TimeState>,
     input: Res<ButtonInput<KeyCode>>,
     level_walls: Res<LevelWalls>,
 ) {
-    let (movement_direction, facing, axis, sense) = if input.just_pressed(KeyCode::KeyW) {
-        (GridCoords::new(0, 1), Facing::Up, TimeAxis::Vertical, 1)
-    } else if input.just_pressed(KeyCode::KeyA) {
-        (
-            GridCoords::new(-1, 0),
-            Facing::Left,
-            TimeAxis::Horizontal,
-            -1,
-        )
-    } else if input.just_pressed(KeyCode::KeyS) {
-        (GridCoords::new(0, -1), Facing::Down, TimeAxis::Vertical, -1)
-    } else if input.just_pressed(KeyCode::KeyD) {
-        (
-            GridCoords::new(1, 0),
-            Facing::Right,
-            TimeAxis::Horizontal,
-            1,
-        )
+    let (movement, facing, axis, sense) = if input.pressed(KeyCode::KeyW) {
+        ((0.0, 1.0), Facing::Up, TimeAxis::Vertical, 1)
+    } else if input.pressed(KeyCode::KeyA) {
+        ((-1.0, 0.0), Facing::Left, TimeAxis::Horizontal, -1)
+    } else if input.pressed(KeyCode::KeyS) {
+        ((0.0, -1.0), Facing::Down, TimeAxis::Vertical, -1)
+    } else if input.pressed(KeyCode::KeyD) {
+        ((1.0, 0.0), Facing::Right, TimeAxis::Horizontal, 1)
     } else {
         return;
     };
 
-    /// TODO break this out into another system
-    if (time_state.time_axis == axis) {
-        time_state.time = time_state.time + sense * time_state.time_step_delta
-    }
+    // TODO break this out into another system
 
-    for (mut player_grid_coords, mut sprite) in players.iter_mut() {
-        let destination = *player_grid_coords + movement_direction;
-        if !level_walls.in_wall(&destination) {
-            *player_grid_coords = destination;
+    for (mut transform, mut player_grid_coords, mut sprite) in players.iter_mut() {
+        let translation = Vec2::from(movement) * consts::MOVEMENT_SPEED;
+        let new_transform = transform.with_translation(
+            transform.translation
+                + Vec3 {
+                    x: translation.x as f32,
+                    y: translation.y as f32,
+                    z: 0.0,
+                },
+        );
+
+        let new_grid_coords = bevy_ecs_ldtk::utils::translation_to_grid_coords(
+            new_transform.translation.xy(),
+            IVec2 {
+                x: consts::GRID_SIZE,
+                y: consts::GRID_SIZE,
+            },
+        );
+
+        if !level_walls.in_wall(&new_grid_coords) {
+            *player_grid_coords = new_grid_coords;
+            *transform = new_transform;
+            if time_state.time_axis == axis {
+                time_state.time = time_state.time + sense * time_state.time_step_delta
+            }
         }
+
         match facing {
             Facing::Left => sprite.flip_x = true,
             Facing::Right => sprite.flip_x = false,
@@ -123,7 +138,7 @@ fn animate_player(
 // Switch orb!
 fn check_switch_orb_hit(
     mut time_state: ResMut<TimeState>,
-    players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
+    players: Query<&GridCoords, (With<Player>, Without<PlayerInOrb>, Changed<GridCoords>)>,
     orbs: Query<&GridCoords, With<AxisSwitch>>,
 ) {
     for player in &players {
@@ -141,10 +156,45 @@ fn check_switch_orb_hit(
     }
 }
 
+#[derive(Component)]
+pub struct PlayerInOrb;
+
+pub fn check_in_orb(
+    mut commands: Commands,
+    players: Query<
+        (Entity, &GridCoords),
+        (With<Player>, Without<PlayerInOrb>, Changed<GridCoords>),
+    >,
+    orbs: Query<&GridCoords, With<Orb>>,
+) {
+    for (player, player_coords) in &players {
+        for orb_coords in &orbs {
+            if player_coords == orb_coords {
+                commands.entity(player).insert(PlayerInOrb);
+                return;
+            }
+        }
+    }
+}
+
+pub fn check_in_no_orb(
+    mut commands: Commands,
+    players: Query<(Entity, &GridCoords), (With<Player>, With<PlayerInOrb>, Changed<GridCoords>)>,
+    orbs: Query<&GridCoords, With<Orb>>,
+) {
+    for (player, player_coords) in &players {
+        for orb_coords in &orbs {
+            if player_coords == orb_coords {
+                return;
+            }
+        }
+        commands.entity(player).remove::<PlayerInOrb>();
+    }
+}
 // Direction orb!
 fn check_direction_orb_hit(
     mut time_state: ResMut<TimeState>,
-    players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
+    players: Query<&GridCoords, (With<Player>, Without<PlayerInOrb>, Changed<GridCoords>)>,
     orbs: Query<&GridCoords, With<DirectionSwitch>>,
 ) {
     for player in &players {
@@ -160,7 +210,7 @@ fn check_direction_orb_hit(
 // Speed up orb!
 fn check_speed_up_orb_hit(
     mut time_state: ResMut<TimeState>,
-    players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
+    players: Query<&GridCoords, (With<Player>, Without<PlayerInOrb>, Changed<GridCoords>)>,
     orbs: Query<&GridCoords, With<SpeedUp>>,
 ) {
     for player in &players {
@@ -176,7 +226,7 @@ fn check_speed_up_orb_hit(
 // Slow down orb!
 fn check_slow_down_orb_hit(
     mut time_state: ResMut<TimeState>,
-    players: Query<&GridCoords, (With<Player>, Changed<GridCoords>)>,
+    players: Query<&GridCoords, (With<Player>, Without<PlayerInOrb>, Changed<GridCoords>)>,
     orbs: Query<&GridCoords, With<SlowDown>>,
 ) {
     for player in &players {
@@ -200,7 +250,6 @@ fn check_goal_acheived(
         .zip(goals.iter())
         .any(|(player_grid_coords, goal_grid_coords)| player_grid_coords == goal_grid_coords)
     {
-        println!("GOAL ACHEIVED");
         let indices = match level_selection.into_inner() {
             LevelSelection::Indices(indices) => indices,
             _ => panic!("level selection should always be Indices in this game"),

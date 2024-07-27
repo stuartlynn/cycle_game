@@ -69,12 +69,12 @@ impl std::fmt::Display for Seasion {
 
 impl TimeState {
     pub fn current_hour(&self) -> i32 {
-        self.time % 24
+        (self.time / 60) % 24
     }
 
     pub fn current_seasion(&self) -> Seasion {
-        let day = self.time / 24;
-        let seasion_int = (self.time / (DAYS_PER_SEASION * 24)) % 4;
+        let day = self.time / 24 / 60;
+        let seasion_int = (self.time / (DAYS_PER_SEASION * 24 * 60)) % 4;
 
         match seasion_int {
             0 => Seasion::Spring,
