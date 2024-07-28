@@ -1,6 +1,6 @@
 import torch
 from typing import Optional
-from diffusers import StableDiffusionPipeline
+
 from diffusers.models.lora import LoRACompatibleConv
 
 
@@ -24,29 +24,3 @@ def seamless_tiling(pipeline, x_axis: bool = True, y_axis: bool = True):
             layer.lora_layer = lambda * x: 0
         layer._conv_forward = asymmetric_conv2d_convforward.__get__(layer, torch.nn.Conv2d)
     return pipeline
-
-
-
-
-# pipeline = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, use_safetensors=True)
-# pipeline.enable_model_cpu_offload()
-# prompt = ["texture of a red brick wall"]
-# seed = 123456
-# generator = torch.Generator(device='cuda').manual_seed(seed)
-#
-# pipeline = seamless_tiling(pipeline=pipeline, x_axis=True, y_axis=True)
-# image = pipeline(
-#     prompt=prompt,
-#     width=512,
-#     height=512,
-#     num_inference_steps=20,
-#     guidance_scale=7,
-#     num_images_per_prompt=1,
-#     generator=generator
-# ).images[0]
-# image.save('tiled_image.png')
-
-
-# seamless_tiling(pipeline=pipeline, x_axis=False, y_axis=False)
-#
-# torch.cuda.empty_cache()

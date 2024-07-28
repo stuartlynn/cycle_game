@@ -104,15 +104,13 @@ def generate_tileset(base_tile_path, output_path, taper_rate=TAPER_RATE, output_
 
 # Test code
 if __name__ == "__main__":
-    # Save "base_tile.png" as a 512x512 plain yellow
-    # base_tile = Image.new('RGB', (512, 512), (255, 255, 0))
-    # base_tile.save("default_tile.png")
-    default_base_tile = "terrain_tiles_photo/46_summer_sunny_desert.png"
+    default_base_tile = "terrain_tiles_oil/44_summer_sunny_pebbles.png"
+    taper_power = 2  # 0 if we want just to view the tiling
 
     parser = argparse.ArgumentParser(description="Generate a tileset with fading edges.")
     parser.add_argument("--base_tile",  default=default_base_tile, help="Path to the base tile image")
-    parser.add_argument("--output", default="default_tileset.png",  help="Path for the output tileset")
-    parser.add_argument("--taper", type=float, default=TAPER_RATE, help="Taper rate for fading (default: 1.0)")
+    parser.add_argument("--output", default="tiled_pebbles.png",  help="Path for the output tileset")
+    parser.add_argument("--taper", type=float, default=taper_power, help="Taper rate for fading (default: 1.0)")
     parser.add_argument("--format", choices=['auto', 'png', 'webp'], default='auto',
                         help="Output format (default: auto)")
 

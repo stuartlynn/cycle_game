@@ -5,14 +5,14 @@ import os
 from diffusers import StableDiffusionXLPipeline
 import torch
 
-
+DEBUG = True # just make a single image
 RANDOM_SEED = 42
 N_STEPS = 2
 N_SEEDS = 3
 CPU_OFFLOAD = False
-CREATURE = "rat"
+CREATURE = "cow"
 COLOUR = "purple"
-OUTPUT_FOLDER = f"{CREATURE}_images
+OUTPUT_FOLDER = f"{CREATURE}_images"
 SDXL_TURBO = "stabilityai/sdxl-turbo"
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -22,8 +22,10 @@ pipe = StableDiffusionXLPipeline.from_pretrained(
 ).to("cuda")
 pipe.enable_model_cpu_offload()
 
-base_prompt = f"{COLOUR} {CREATURE} Garkactigaca, side view, 3d render, profile view, dynamic, angry green eyes, tufts of hair, long tail, pixar, disney, nemo, high quality, full shot, on a white background, "
+human_prompt =
 
+base_prompt = f"{COLOUR} {CREATURE} Garkactigaca, side view, 3d render, profile view, dynamic, angry green eyes, tufts of hair, long tail, pixar, disney, nemo, high quality, full shot, on a white background, "
+base_prompt = human_prompt
 
 def make_image(name, image_prompt):
 
@@ -45,11 +47,23 @@ def make_image(name, image_prompt):
 # make poses which are comprised of action and view
 prompts = []
 filenames = []
-actions = ["moving", "running", "walking", "jumping", "sitting", "flying", "leaping", "playing"]
-views = ["side", "front",  "back", "top", "bottom", "isometric", "orthographic", "perspective"]
+
+if DEBUG:
+    actions = ["moving"]
+    views = ["side"]
+    N_SEEDS = 1
+    N_STEPS = 1
+else:
+    actions = ["moving", "running", "walking", "jumping", "sitting", "flying", "leaping", "playing"]
+    views = ["side", "front",  "back", "top", "bottom", "isometric", "orthographic", "perspective"]
+
+
 for action in actions:
     for view in views:
-        full_prompt = f"{action} {base_prompt}, camera {view} view perspective"
+        if DEBUG:
+            full_prompt = f"A grassy field"
+        else:
+            full_prompt = f"{action} {base_prompt}, camera {view} view perspective"
 
         # If pose contains "back view", must remove "green eyes" from prompt or else it forces eyes on the back of the head
         if "back view" in full_prompt:
