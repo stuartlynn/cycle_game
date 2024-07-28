@@ -11,12 +11,12 @@ SEASONS = ["spring", "summer", "autumn", "winter"]
 # CONDITIONS = ["sunny", "night"] # probably just rely on in-game lighting
 SURFACE_TYPES = ["grass", "desert", "rock", "ocean", "pebbles", "dirt"]
 
-SEED = 42
+SEED = 43
 RESOLUTION = 512  # Default for sdxl turbo
 
 OUTPUT_RESOLUTION = 128  # Create images on 128x128 resolution
 
-OUTPUT_FOLDER = "terrain_tiles_plain"
+OUTPUT_FOLDER = "terrain_tiles_oils"
 N_STEPS = 2
 GUIDANCE = 0.0
 
@@ -41,7 +41,7 @@ def create_terrain_tile(pipeline, surface: str, season: str, condition = None) -
 
 #    prompt = f"Texture of {surface} during {season} season while it is {condition}. As viewed from above, at a medium distance. Surreal oil painting, bold exaggerated styles."
 #     prompt = f"Very simple plain texture of {surface} during {season} season while it is {condition}. As viewed from above, at a medium distance. Realistic, bold exaggerated styles."
-    prompt = f"Very simple plain texture of {surface} during {season} season.  As viewed from above, at a medium distance. Realistic, bold exaggerated styles."
+    prompt = f"Very simple plain texture of {surface} during {season} season.  As viewed from above, at a medium distance. Surreal oil painting, bold exaggerated styles."
 
     if condition is not None:
         filename = f"{SEED}_{season}_{condition}_{surface}.png"
